@@ -13,6 +13,16 @@ module Rails
         end
       end
 
+      initializer "mongoid.observer", :before => "mongoid.load-config" do |app|
+        ActiveSupport.on_load(:mongoid) do
+          require "rails/observers/mongoid/mongoid"
+
+          if observers = app.config.respond_to?(:mongoid_observers) && app.config.mongoid_observers
+            send :observers=, observers
+          end
+        end
+      end
+
       initializer "action_controller.caching.sweepers" do
         ActiveSupport.on_load(:action_controller) do
           require "rails/observers/action_controller/caching"
@@ -25,6 +35,13 @@ module Rails
 
           ActionDispatch::Reloader.to_prepare do
             ActiveRecord::Base.instantiate_observers
+          end
+        end
+        ActiveSupport.on_load(:mongoid) do
+          ::Mongoid::Document.instantiate_observers
+
+          ActionDispatch::Reloader.to_prepare do
+            ::Mongoid::Document.instantiate_observers
           end
         end
       end
