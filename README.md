@@ -6,9 +6,9 @@ Rails Observers (removed from core in Rails 4.0)
 ## Installation
 
 Add this line to your application's Gemfile:
-
-    gem 'rails-observers'
-
+```ruby
+gem 'rails-observers'
+```
 And then execute:
 
     $ bundle
@@ -74,7 +74,7 @@ end
 
 Please note that observers are called in the order that they are defined. This means that callbacks in an observer
 will always be called *after* callbacks defined in the model itself. Likewise, `has_one` and `has_many`
-use callbacks to enforce `:dependent => :destroy`. Therefore, associated records will be destroyed before
+use callbacks to enforce `dependent: :destroy`. Therefore, associated records will be destroyed before
 the observer's `before_destroy` is called.
 
 For an observer to be active, it must be registered first. This can be done by adding the following line into the `application.rb`:
@@ -94,19 +94,19 @@ class ListSweeper < ActionController::Caching::Sweeper
 
   def after_save(record)
     list = record.is_a?(List) ? record : record.list
-    expire_page(:controller => "lists", :action => %w( show public feed ), :id => list.id)
-    expire_action(:controller => "lists", :action => "all")
-    list.shares.each { |share| expire_page(:controller => "lists", :action => "show", :id => share.url_key) }
+    expire_page(controller: "lists", action: %w( show public feed ), id: list.id)
+    expire_action(controller: "lists", action: "all")
+    list.shares.each { |share| expire_page(controller: "lists", action: "show", id: share.url_key) }
   end
 end
 ```
 
-The sweeper is assigned in the controllers that wish to have its' job performed using the `cache_sweeper` class method:
+The sweeper is assigned in the controllers that wish to have its job performed using the `cache_sweeper` class method:
 
 ```ruby
 class ListsController < ApplicationController
   caches_action :index, :show, :public, :feed
-  cache_sweeper :list_sweeper, :only => [ :edit, :destroy, :share ]
+  cache_sweeper :list_sweeper, only: [ :edit, :destroy, :share ]
 end
 ```
 
@@ -117,7 +117,7 @@ You can also name an explicit class in the declaration of a sweeper, which is ne
 ```ruby
 class ListsController < ApplicationController
   caches_action :index, :show, :public, :feed
-  cache_sweeper OpenBar::Sweeper, :only => [ :edit, :destroy, :share ]
+  cache_sweeper OpenBar::Sweeper, only: [ :edit, :destroy, :share ]
 end
 ```
 

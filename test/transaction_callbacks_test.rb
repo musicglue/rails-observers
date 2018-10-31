@@ -1,7 +1,12 @@
 require "helper"
 
-class TransactionCallbacksTest < ActiveRecord::TestCase
-  self.use_transactional_fixtures = false
+class TransactionCallbacksTest < ActiveSupport::TestCase
+  if respond_to?(:use_transactional_tests=)
+    self.use_transactional_tests = false
+  else
+    self.use_transactional_fixtures = false
+  end
+
   fixtures :topics
 
   class TopicWithCallbacks < ActiveRecord::Base
@@ -227,20 +232,25 @@ class TransactionCallbacksTest < ActiveRecord::TestCase
     @second.after_commit_block{|r| r.history << :after_commit}
     @second.after_rollback_block{|r| r.history << :after_rollback}
 
-    Topic.transaction do
-      @first.save!
-      @second.save!
+    assert_raises RuntimeError do
+      Topic.transaction do
+        @first.save!
+        @second.save!
+      end
     end
     assert_equal :commit, @first.last_after_transaction_error
     assert_equal [:after_commit], @second.history
 
     @second.history.clear
-    Topic.transaction do
-      @first.save!
-      @second.save!
-      raise ActiveRecord::Rollback
+
+    assert_raises RuntimeError do
+      Topic.transaction do
+        @first.save!
+        @second.save!
+        raise ActiveRecord::Rollback
+      end
     end
     assert_equal :rollback, @first.last_after_transaction_error
-    assert_equal [:after_rollback], @second.history
+    assert_equal [], @second.history
   end
 end

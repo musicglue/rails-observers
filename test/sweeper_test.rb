@@ -1,6 +1,5 @@
-require 'minitest/autorun'
+require 'helper'
 require 'action_controller'
-require 'active_record'
 require 'rails/observers/activerecord/active_record'
 require 'rails/observers/action_controller/caching'
 
@@ -14,7 +13,7 @@ class SweeperTestController < ActionController::Base
   cache_sweeper :app_sweeper
 
   def show
-    render text: 'hello world'
+    render plain: 'hello world'
   end
 
   def error
@@ -27,7 +26,8 @@ class SweeperTest < ActionController::TestCase
     @routes = SharedTestRoutes
 
     @routes.draw do
-      get ':controller(/:action)'
+      get 'sweeper_test/show'
+      get 'sweeper_test/error'
     end
 
     super
@@ -75,8 +75,20 @@ class SweeperTest < ActionController::TestCase
 
   def test_process(controller, action = "show")
     @controller = controller.is_a?(Class) ? controller.new : controller
-    @request    = ActionController::TestRequest.new
-    @response   = ActionController::TestResponse.new
+    if ActionController::TestRequest.respond_to?(:create)
+      if ActionController::TestRequest.method(:create).arity == 0
+        @request    = ActionController::TestRequest.create
+      else
+        @request    = ActionController::TestRequest.create @controller.class
+      end
+    else
+      @request    = ActionController::TestRequest.new
+    end
+    if ActionController.constants.include?(:TestResponse)
+      @response   = ActionController::TestResponse.new
+    else
+      @response   = ActionDispatch::TestResponse.new
+    end
 
     process(action)
   end

@@ -1,6 +1,7 @@
 require 'minitest/autorun'
+require 'mocha/minitest'
 require 'active_record'
-
+require 'rails'
 require 'rails/observers/activerecord/active_record'
 
 FIXTURES_ROOT = File.expand_path(File.dirname(__FILE__)) + "/fixtures"
@@ -8,12 +9,22 @@ FIXTURES_ROOT = File.expand_path(File.dirname(__FILE__)) + "/fixtures"
 class ActiveSupport::TestCase
   include ActiveRecord::TestFixtures
 
+  self.test_order = :random if self.respond_to?(:test_order=)
   self.fixture_path = FIXTURES_ROOT
   self.use_instantiated_fixtures  = false
-  self.use_transactional_fixtures = true
+
+  if respond_to?(:use_transactional_tests=)
+    self.use_transactional_tests = true
+  else
+    self.use_transactional_fixtures = true
+  end
 end
 
-ActiveRecord::Base.configurations = { "test" => { adapter: 'sqlite3', database: ':memory:' } }
+if Rails.version.start_with?('4.2')
+  ActiveRecord::Base.raise_in_transactional_callbacks = true
+end
+
+ActiveRecord::Base.configurations = { 'test' => { 'adapter' => 'sqlite3', 'database' => ':memory:' } }
 ActiveRecord::Base.establish_connection(:test)
 
 ActiveRecord::Schema.verbose = false
@@ -33,7 +44,7 @@ ActiveRecord::Schema.define do
     t.string   :parent_title
     t.string   :type
     t.string   :group
-    t.timestamps
+    t.timestamps :null => false
   end
 
   create_table :comments do |t|
@@ -67,8 +78,4 @@ class Developer < ActiveRecord::Base
 end
 
 class Minimalistic < ActiveRecord::Base
-end
-
-ActiveSupport::Deprecation.silence do
-  require 'active_record/test_case'
 end

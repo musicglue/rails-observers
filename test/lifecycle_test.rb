@@ -17,7 +17,12 @@ class SalaryChecker < ActiveRecord::Observer
   attr_accessor :last_saved
 
   def before_save(developer)
-    return developer.salary > 80000
+    should_abort = developer.salary <= 80000
+    begin
+      throw :abort if should_abort
+    rescue
+      return !should_abort
+    end
   end
 
   module Implementation
@@ -72,7 +77,8 @@ class MultiObserver < ActiveRecord::Observer
     @@last_inherited = subclass
   end
 
-  alias_method_chain :observed_class_inherited, :testing
+  alias_method :observed_class_inherited_without_testing, :observed_class_inherited
+  alias_method :observed_class_inherited, :observed_class_inherited_with_testing
 
   def after_find(record)
     @record = record
@@ -118,7 +124,7 @@ class AroundTopicObserver < ActiveRecord::Observer
   end
 end
 
-class LifecycleTest < ActiveRecord::TestCase
+class LifecycleTest < ActiveSupport::TestCase
   fixtures :topics, :developers, :minimalistics
 
   def test_before_destroy
